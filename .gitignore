@@ -2,4 +2,4 @@ r34sch.kdev4
 out.html
 outm.html
 venv/
-.env
+./.env
