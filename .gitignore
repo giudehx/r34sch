@@ -3,3 +3,5 @@ out.html
 outm.html
 venv/
 ./.env
+__pycache__/
+
