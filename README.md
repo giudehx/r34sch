@@ -81,5 +81,4 @@ Here's the available options:
 
 ## Notes
 This is a very work in progress, later we'll add improvements such as different sites and api keys, multitasking as well.
-## Licence
-This script is licenced thru the MIT License
+
