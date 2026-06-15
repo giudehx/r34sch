@@ -4,4 +4,4 @@ outm.html
 venv/
 ./.env
 __pycache__/
-
+src/__pycache__/

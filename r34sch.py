@@ -1,20 +1,32 @@
-'''
-Documentation, License etc.
+# R34Sch - CLI Rule 34 Scraper and downloader
+# Copyright (C) 2026 GiudeHX <errno.giudetest@gmail.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-@package r34sch
-'''
 import requests, random, os, time, sys
 from bs4 import BeautifulSoup
 from curl_cffi import requests as c_requests
-from dotenv import load_dotenv # NOQA
+from dotenv import load_dotenv
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
-import ui, threading
-from ui import RED,GREEN,BLUE,YELLOW,END,RED_BG
+import threading
+from src import ui
+from src.ui import RED,GREEN,BLUE,YELLOW,END,RED_BG
 load_dotenv()
-from download import download,getsafe
+from src.download import download,getsafe,downloadApi
 
-from constants import URL
+from src.constants import URL
 # OG Image scrapper by ClaustAI/Kiyopon
 
 def parseUrl(hd_image,images,soup,pid,prompt):
@@ -62,10 +74,7 @@ def main(prompt:str,
     if len(detected) < images:
         print(f"r34sch: info: we've detected {len(detected)} images instead of {images}")
         images = len(detected)
-    if '~' in output:
-        if not os.path.exists(os.path.expanduser(output)): os.makedirs(os.path.expanduser(output), exist_ok=True)
-    else:
-        if not os.path.exists(os.path.abspath(output)): os.makedirs(os.path.abspath(output), exist_ok=True)
+    if not os.path.exists(os.path.expanduser(output)): os.makedirs(os.path.expanduser(output), exist_ok=True)
     parsed=1
     for url in detected:
         if hd_image:
@@ -117,17 +126,36 @@ def quiet():
     os.dup2(devnull.fileno(),sys.stdout.fileno())
     os.dup2(devnull.fileno(),sys.stderr.fileno())
 import argparse
+from src.constants import CONFIG_PATH
 parser = argparse.ArgumentParser(prog="r34sch")
-parser.add_argument("prompt", help="The prompt (or tag) for searching Rule 34 content (eg. character_(show) or just character)", type=str)
+parser.add_argument("prompt", help="The prompt (or tag) for searching Rule 34 content (eg. character_(show) or just character)", type=str, nargs="?", default=None)
 parser.add_argument("-i", "--images", help="The amount of images to download", type=int, default=10)
-parser.add_argument("-p", "--page", help="Tell the program what page to search", type=int, default=1)
+parser.add_argument("-p", "--page", help="Tell the program what page to search", type=int, default=None)
 parser.add_argument("-t", "--thumbnail", help="Only download the thumbnail instead of the post image, helps speed the program", action="store_true")
 parser.add_argument("-o", "--output", help="Where the files will be downloaded", type=str)
 parser.add_argument("-q", "--quiet", help="Disables output when running R34Sch.", action="store_true")
+parser.add_argument("--load-config", help="Load the configuration file: r34sch_config.cfg", action="store_true")
 args=parser.parse_args()
+from src import constants
+print(f"R34Sch {constants.VERSION}")
 if args.quiet: quiet()
-main(prompt=args.prompt,
-     pid=args.page,
-     hd_image=False if args.thumbnail else True,
-     images=args.images, output=args.output)
-print("\n-- r34sch done, many thanks!! :D --")
+if args.thumbnail: constants.API_THUMB_DOWNLOAD = True
+else:              constants.API_THUMB_DOWNLOAD = False
+if args.load_config:
+    from src.config import loadcfg
+    loadcfg()
+    print("r34sch: loaded config file")
+    exit(0)
+if os.path.exists(CONFIG_PATH):
+    from src import api
+    ui.run_spinner("--> obtaining posts...")
+    posts = api.getPostsFromApi(args.images, args.prompt, args.page)
+    ui.stop_spinner()
+    downloadApi(posts, args.output if args.output else "r34_out")
+    exit(0)
+else:
+    # default to old scraping tools
+    main(prompt=args.prompt,
+        pid=1 if args.page == None else args.page,
+        hd_image=False if args.thumbnail else True,
+        images=args.images, output=args.output)
