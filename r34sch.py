@@ -21,7 +21,7 @@ from dotenv import load_dotenv
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
 import threading
-from src import ui
+from src import ui, config
 from src.ui import RED,GREEN,BLUE,YELLOW,END,RED_BG
 load_dotenv()
 from src.download import download,getsafe,downloadApi
@@ -99,7 +99,7 @@ def main(prompt:str,
                     hd = {
                         'Referer': img_url,
                         'Origin': img_url.split("/")[0]+"//"+img_url.split("/")[2],
-                        "Cookie": os.getenv("R34_COOKIE")
+                        "Cookie": config.extractcfg()["cookie"]
                     }
                     video_r = getsafe(img_url, impersonate="chrome", headers=hd)
                     v_soup = BeautifulSoup(video_r.text, 'html.parser')
@@ -129,28 +129,39 @@ import argparse
 from src.constants import CONFIG_PATH
 parser = argparse.ArgumentParser(prog="r34sch")
 parser.add_argument("prompt", help="The prompt (or tag) for searching Rule 34 content (eg. character_(show) or just character)", type=str, nargs="?", default=None)
-parser.add_argument("-i", "--images", help="The amount of images to download", type=int, default=10)
+parser.add_argument("-i", "--images", help="The amount of images to download. Note that sometimes when you request a high number (more that the registered posts )", type=int, default=10)
 parser.add_argument("-p", "--page", help="Tell the program what page to search", type=int, default=None)
 parser.add_argument("-t", "--thumbnail", help="Only download the thumbnail instead of the post image, helps speed the program", action="store_true")
 parser.add_argument("-o", "--output", help="Where the files will be downloaded", type=str)
 parser.add_argument("-q", "--quiet", help="Disables output when running R34Sch.", action="store_true")
-parser.add_argument("--load-config", help="Load the configuration file: r34sch_config.cfg", action="store_true")
+parser.add_argument("--load-config", help="Load the configuration file: r34sch.cfg", action="store_true")
+parser.add_argument("--skip-metadata", help="Disable writing metadata when downloading files.", action="store_true")
+parser.add_argument("--exclude-ai", help="Filter AI posts. Rejects a post from downloading if in one of its tags containes \'ai_\'.", action="store_true")
 args=parser.parse_args()
 from src import constants
-print(f"R34Sch {constants.VERSION}")
+
+print(f"\x1b[42mR34Sch {constants.VERSION}{END}")
+
 if args.quiet: quiet()
-if args.thumbnail: constants.API_THUMB_DOWNLOAD = True
-else:              constants.API_THUMB_DOWNLOAD = False
+
+if args.thumbnail:     constants.API_THUMB_DOWNLOAD = True
+else:                  constants.API_THUMB_DOWNLOAD = False
+if args.skip_metadata: constants.SKIP_METADATA = True
+else:                  constants.SKIP_METADATA = False
+if args.exclude_ai:    constants.EXCLUDE_AI = True
+else:                  constants.EXCLUDE_AI = False
+
 if args.load_config:
     from src.config import loadcfg
     loadcfg()
-    print("r34sch: loaded config file")
     exit(0)
+
 if os.path.exists(CONFIG_PATH):
     from src import api
     ui.run_spinner("--> obtaining posts...")
     posts = api.getPostsFromApi(args.images, args.prompt, args.page)
     ui.stop_spinner()
+    time.sleep(0.125)
     downloadApi(posts, args.output if args.output else "r34_out")
     exit(0)
 else:

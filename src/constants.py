@@ -16,17 +16,18 @@
 
 import os,sys
 
-VERSION = "1.1"
+VERSION = "1.11"
 
 # urls
 URL="https://rule34.xxx"
 API_URL="https://api.rule34.xxx"
 
 # config
-CONFIG_FILE="r34sch_config.cfg"
-if sys.platform.startswith('linux'): R34SCH_FOLDER=os.path.expanduser("~/.r34sch/")
-elif sys.platform.startswith('win'): R34SCH_FOLDER=os.path.expanduser("~//R34Sch//")
+CONFIG_FILE="r34sch.cfg"
+R34SCH_FOLDER=os.path.expanduser("~/.r34sch/")
 CONFIG_PATH = os.path.join(R34SCH_FOLDER,CONFIG_FILE)
 
 # misc
 API_THUMB_DOWNLOAD=False
+SKIP_METADATA=False
+EXCLUDE_AI=False

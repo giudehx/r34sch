@@ -25,7 +25,7 @@ Then, type on the terminal:
 or if that doesn't work:
 ``` python3 -m pip install -r requirements.txt ```
 
-Now that you've installed the dependencies, you actually need to have a `r34sch_config.cfg` file, containing the Rule34.xxx API Key and User ID. **It's highly recommended to do this.**
+Now that you've installed the dependencies, you actually need to have a `r34sch.cfg` file, containing the Rule34.xxx API Key and User ID. **It's highly recommended to do this.**
 
 The format of the config file is this:
 
@@ -49,9 +49,9 @@ It should look like this: *this is just an example lookalike*
 ```
 
 Now how to configure R34Sch?
-1. At the same directory as `r34sch.py` create a new file, it has to be exactly named `r34sch_config.cfg`
+1. At the same directory as `r34sch.py` create a new file, it has to be exactly named `r34sch.cfg`
 2. At the settings page of rule 34 copy the value after `&api_key=`. **Do not copy `&user_id=` and the value that comes after it, stop at the ampersand (&)**
-3. At the `r34sch_config.cfg` file, type: `api_key=` as the first thing, then after the equal sign paste the api key. Do not save the file yet.
+3. At the `r34sch.cfg` file, type: `api_key=` as the first thing, then after the equal sign paste the api key. Do not save the file yet.
 4. Go to the settings page of rule 34 copy the value after `&user_id=`.
 5. At the config file again type: `user_id=`, then after the equal sign paste the user id.
 The .cfg file now should look like this:
@@ -64,7 +64,7 @@ user_id=<YOUR_USER_ID>
 ```
 python r34sch.py --load-config
 ```
-If it errors because it couldn't find `r34sch_config.cfg`, make sure that the file you just saved should be exactly named (both filename and extension): `r34sch_config.cfg`. Then try again
+If it errors because it couldn't find `r34sch.cfg`, make sure that the file you just saved should be exactly named (both filename and extension): `r34sch.cfg`. Then try again
 
 **Congrats! Now it's much more faster! I hope it wasn't a pain in the ass!**
 
@@ -80,6 +80,16 @@ If you do not want to do all of this, you can simply skip all of this and run it
 4. Once finished, clone the repository: ``` git clone https://github.com/giudehx/r34sch.git ```
 5. Then go to the repository directory by typing ```cd r34sch```
 6. Type ```pip install -r requirements.txt```
+
+**Note: if you encounter problems installing the package 'Pillow', copy this command and run it on termux:**
+```bash
+LDFLAGS="-L/system/lib64/" CFLAGS="-I$PREFIX/include" pip install Pillow
+```
+
+Then install dependencies again:
+```bash
+pip install -r requirements.txt
+```
 
 You'd still need the r34sch_config.cfg file mentioned earlier, but if you don't want to do this, you can always run it as is.
 
@@ -107,6 +117,10 @@ Here's the available options:
   -o, --output OUTPUT  Where the files will be downloaded (a folder) (default named r34out)
   
   -q, --quiet          Disables output when running R34Sch.
+  
+  --skip-metadata      Disable writing metadata when downloading files.
+  
+  --exclude-ai         Filter AI posts. Rejects a post from downloading if in one of its tags containes 'ai_'.
 
 ```
 

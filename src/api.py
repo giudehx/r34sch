@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from src.config import extractcfg
-from src.constants import API_URL, R34SCH_FOLDER
+from src.constants import API_URL, R34SCH_FOLDER, EXCLUDE_AI
 from src.ui import RED,END, BLUE, YELLOW
 import requests, json, os
 from datetime import datetime
@@ -46,7 +46,10 @@ def getPostsFromApi(limit,tags,pid=None):
             'hash','id','image','source',
             'change','owner','tags']
     ret_arr = []
-    count = searchTag(tags)["count"]
+    try: count = searchTag(tags)["count"]
+    except:
+        print(f"r34sch: {RED}error:{END} no posts found for: {tags}")
+        exit(1)
     if int(limit) > int(count): limit = int(count)
     try:
         if pid is not None:
@@ -69,6 +72,14 @@ def getPostsFromApi(limit,tags,pid=None):
         resp = requests.get(post_url, params=params)
         resp.raise_for_status()
         posts = resp.json()
+        if EXCLUDE_AI:
+            ai_gen = []
+            for post in posts:
+                for tag in post["tags"].split(' '):
+                    if str(tag).startswith("ai_"):
+                        ai_gen.append(post)
+                        continue
+            posts = [p for p in posts if p not in ai_gen]
         for post in posts:
             all_p = {}
             for k in post:

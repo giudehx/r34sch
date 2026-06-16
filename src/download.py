@@ -80,15 +80,17 @@ def downloadApi(ret_arr, out="r34_out"):
         print(f" [{r.status_code}]",end="")
         url_fs = int(r.headers.get("Content-Length"))
         with open(fname,'wb') as f:
-            c_w=0
+            c_wri = 0
             for c in r.iter_content(chunk_size=8192):
                 f.write(c)
-                c_w+=8192
-                ui.progress(utils.percent(c_w,url_fs))
+                c_wri += len(c)
+                ui.progress(utils.percent(c_wri,url_fs))
         # checking if file exists, add metadata writing
         if not os.path.exists(fname): raise Exception(f"( OnO )=p File {fname} does not exist!")
         print(f"{GREEN}[ok]{END} ({os.path.getsize(fname)} bytes @ {YELLOW}{fname}{END})",flush=True)
-        ui.run_spinner(f"... writing metadata for: {fname}")
-        writeMetadataToFile(fname, link)
-        ui.stop_spinner()
-        time.sleep(0.25)
+        if constants.SKIP_METADATA is not True:
+            ui.run_spinner(f"--> writing metadata:")
+            writeMetadataToFile(fname, link)
+            ui.stop_spinner()
+            time.sleep(0.125)
+        # time.sleep(0.25)
