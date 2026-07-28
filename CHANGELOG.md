@@ -1,5 +1,23 @@
 # R34Sch Changelog
 
+## 1.2
+- Removed metadata writing (metadata.py)
+- Added filtering options:
+- 1. Exclude AI (Improved) (--exclude-ai)
+- 2. Only Images (--only-image)
+- 3. Only Videos (--only-video)
+- 4. Rating (safe, questionable, explicit) (-r)
+- Support for searching (-s)
+- Randomize posts (-R)
+- Cache/History support:
+- - -c for clearing cache folder
+- - -l for listing cache (history)
+- - -d <archive> for deleting a specific archive
+- Download from ID support (-I)
+- -i (--images) renamed to -n (--number)
+- Support for viewing info (metadata) of a post (if -I is passed) or posts (-i)
+- Verbose (-v)
+
 ## 1.11
 - Fixed progress bar overflowing
 - Renamed r34sch_config.cfg to just r34sch.cfg

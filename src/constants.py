@@ -16,18 +16,26 @@
 
 import os,sys
 
-VERSION = "1.11"
+VERSION       = "1.2"
 
 # urls
-URL="https://rule34.xxx"
-API_URL="https://api.rule34.xxx"
+URL           = "https://rule34.xxx"
+API_URL       = "https://api.rule34.xxx"
+
+# folders
+R34SCH_FOLDER = os.path.expanduser("~/.r34sch/")
+TEMP_FOLDER   = os.path.join(R34SCH_FOLDER, "temp")
+CACHE_FOLDER  = os.path.join(R34SCH_FOLDER, "cache")
 
 # config
-CONFIG_FILE="r34sch.cfg"
-R34SCH_FOLDER=os.path.expanduser("~/.r34sch/")
-CONFIG_PATH = os.path.join(R34SCH_FOLDER,CONFIG_FILE)
+CONFIG_FILE   = "r34sch.cfg"
+CONFIG_PATH   = os.path.join(R34SCH_FOLDER,CONFIG_FILE)
 
-# misc
-API_THUMB_DOWNLOAD=False
-SKIP_METADATA=False
-EXCLUDE_AI=False
+# options
+VERBOSE            = False
+API_THUMB_DOWNLOAD = False
+EXCLUDE_AI         = False
+RANDOM             = False
+ONLY_IMAGE         = False
+ONLY_VIDEO         = False
+RATING             = "all"

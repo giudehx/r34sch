@@ -14,14 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os,uuid
+import os,uuid,shutil
 from src.ui import RED,GREEN,END,BLUE,YELLOW
 from curl_cffi import requests as c_requests
 import random,time,threading
 from src import utils
 from src import ui
 from src import constants
-from .metadata import writeMetadataToFile
+from src.utils import vb_print
 def getsafe(url, *args,**kwargs):
     IMPERSONATE_OPTIONS = ["chrome", "edge", "safari", "chrome110", "chrome120"]
     retries, delay = 9, 2
@@ -62,8 +62,10 @@ def download(urlf, out="r34out"):
     print(f" {GREEN}[ok]{END} ({os.path.getsize(fname)} bytes @ {fname})",flush=True)
     time.sleep(0.25)
 
-def downloadApi(ret_arr, out="r34_out"):
+def downloadApi(ret_arr, tag, out="r34_out", gen_archive=True):
     if not os.path.exists(out): os.makedirs(out)
+    if not os.path.exists(constants.TEMP_FOLDER): os.makedirs(constants.TEMP_FOLDER)
+    dw_files, og_hash = [], []
     for link in ret_arr:
         if constants.API_THUMB_DOWNLOAD: urlf = link["preview_url"]
         else: urlf = link["file_url"]
@@ -71,14 +73,12 @@ def downloadApi(ret_arr, out="r34_out"):
             'Referer': urlf,
             'Origin': urlf.split("/")[0]+"//"+urlf.split("/")[2]
         }
-        print(f"[{ret_arr.index(link)+1}/{len(ret_arr)}] {BLUE}downloading:{END} {YELLOW}{urlf}{END}",end="",flush=True)
-        try:fname=os.path.abspath(os.path.join(out,link["image"]))
-        except:
-            unique=uuid.uuid4().hex[:8]
-            fname=os.path.abspath(os.path.join(out,f"r34sch_{unique}_{urlf.split('/')[-1]}"))
+        print(f"[{ret_arr.index(link)+1}/{len(ret_arr)}] {BLUE}downloading:{END} {YELLOW}{urlf}{END}",flush=True)
+        fname=os.path.abspath(os.path.join(constants.TEMP_FOLDER,link["image"]))
         r = getsafe(urlf, stream=True, headers=headers, impersonate="chrome")
-        print(f" [{r.status_code}]",end="")
+        vb_print(f"[dw] Server returned {r.status_code}")
         url_fs = int(r.headers.get("Content-Length"))
+        vb_print(f"[dw] Size of image is {url_fs} bytes")
         with open(fname,'wb') as f:
             c_wri = 0
             for c in r.iter_content(chunk_size=8192):
@@ -87,10 +87,17 @@ def downloadApi(ret_arr, out="r34_out"):
                 ui.progress(utils.percent(c_wri,url_fs))
         # checking if file exists, add metadata writing
         if not os.path.exists(fname): raise Exception(f"( OnO )=p File {fname} does not exist!")
-        print(f"{GREEN}[ok]{END} ({os.path.getsize(fname)} bytes @ {YELLOW}{fname}{END})",flush=True)
-        if constants.SKIP_METADATA is not True:
-            ui.run_spinner(f"--> writing metadata:")
-            writeMetadataToFile(fname, link)
-            ui.stop_spinner()
-            time.sleep(0.125)
-        # time.sleep(0.25)
+        print(f"{GREEN}[ok]{END} ({os.path.getsize(fname)} bytes)",flush=True)
+        # start new thread here
+        dest_p = os.path.abspath(os.path.join(out, link["image"]))
+        shutil.copy2(fname, dest_p)
+        dw_files.append(dest_p)
+        og_hash.append(link["hash"])
+        vb_print(f"[dw] Downloaded {len(dw_files)} files.")
+        os.remove(fname)
+    # generate cache
+    if ret_arr:
+        if gen_archive:
+            print("[*] generating archive...")
+            utils.create_cached_archive(dw_files, tag, meta=ret_arr)
+            print(f"{GREEN}[ok]{END}")

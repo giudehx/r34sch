@@ -15,23 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os, shutil, sys
-from src.constants import CONFIG_FILE, R34SCH_FOLDER, CONFIG_PATH
+from src.constants import CONFIG_FILE, R34SCH_FOLDER, CONFIG_PATH, CACHE_FOLDER, TEMP_FOLDER
 from src.ui import RED,END
-def securecfg():
-    if not os.path.exists(CONFIG_PATH): print("[??] well, thats a new one.")
-    if sys.platform == "linux":
-        os.chmod(CONFIG_PATH, 0o600)
-        return True
-    elif sys.platform == "win32":
-        import subprocess
-        subprocess.run(f"icalcs \"{CONFIG_PATH}\" /inheritance:r",shell=True,check=True)
-        subprocess.run(f"icalcs \"{CONFIG_PATH}\" /grant:r \"{os.getlogin()}\":F",shell=True,check=True)
-        return True
+from src.utils import secure
+
 def loadcfg():
     if CONFIG_FILE in os.listdir(os.getcwd()):
         os.makedirs(R34SCH_FOLDER, exist_ok=True)
+        os.makedirs(CACHE_FOLDER, exist_ok=True)
+        os.makedirs(TEMP_FOLDER, exist_ok=True)
         shutil.copyfile(CONFIG_FILE, CONFIG_PATH)
-        securecfg()
+        secure(CONFIG_FILE)
     else:
         print(f"r34sch: {RED}error:{END} no config file found, is the config named {CONFIG_FILE}?")
 def extractcfg():

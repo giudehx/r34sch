@@ -32,7 +32,6 @@ The format of the config file is this:
 ```
 api_key=<YOUR_API_KEY>
 user_id=<YOUR_USER_ID>
-cookies=<YOUR_RULE34_COOKIES>
 ```
 
 To get the API Key (and User ID) (skip 1 and 2 if you are already logged in):
@@ -81,17 +80,12 @@ If you do not want to do all of this, you can simply skip all of this and run it
 5. Then go to the repository directory by typing ```cd r34sch```
 6. Type ```pip install -r requirements.txt```
 
-**Note: if you encounter problems installing the package 'Pillow', copy this command and run it on termux:**
-```bash
-LDFLAGS="-L/system/lib64/" CFLAGS="-I$PREFIX/include" pip install Pillow
-```
-
 Then install dependencies again:
 ```bash
 pip install -r requirements.txt
 ```
 
-You'd still need the r34sch_config.cfg file mentioned earlier, but if you don't want to do this, you can always run it as is.
+You'd still need the r34sch.cfg file mentioned earlier.
 
 ## Using R34Sch
 
@@ -105,24 +99,74 @@ Or options:
 
 Here's the available options:
 ```
-
-  -h, --help           show the help message and exit
-  
-  -i, --images IMAGES  The amount of images to download
-  
+options:
+  -h, --help           show this help message and exit
+  -n, --number NUMBER  The number of images to download.
+  -i, --info           Get the information of a post (if -I is passed) or posts instead of downloading
+  -v, --verbose        Enable verbosity, basically more output when executing
   -p, --page PAGE      Tell the program what page to search
-  
   -t, --thumbnail      Only download the thumbnail instead of the post image, helps speed the program
-  
-  -o, --output OUTPUT  Where the files will be downloaded (a folder) (default named r34out)
-  
+  -o, --output OUTPUT  Where the images will be downloaded, default is 'r34_out'
   -q, --quiet          Disables output when running R34Sch.
-  
-  --skip-metadata      Disable writing metadata when downloading files.
-  
+  -I, --id             Download from an ID.
+  -r, --rating RATING  Filter posts by rating, options are: safe, questionable and explicit, can also be combined but have to be seperated by commas.
+                       (safe,questionable; explicit,safe ...)
+  -s, --search         Search for posts instead of downloading.
+  --load-config        Load the configuration file: r34sch.cfg, basically required, for more information read the README.md file
   --exclude-ai         Filter AI posts. Rejects a post from downloading if in one of its tags containes 'ai_'.
-
+  -R, --random         Randomize posts.
+  --only-image         Retrieve only images
+  --only-video         Retrieve only videos
+  -c, --clear-cache    Clear the cache folder.
+  -l, --list-cache     View the currently cached/archived downloads.
+  -d, --delete DELETE  Delete a specific cache/archive, please do -l or --list-cache first
 ```
+
+## Examples
+
+To download something, type:
+```
+python3 r34sch.py "<someone>" -n <number of posts to download> -o <output folder>
+```
+
+Or from an ID:
+```
+python3 r34sch.py -I "<id>" -o <output folder>
+```
+
+To search for a name (and posts):
+```
+python3 r34sch.py -s "<someone>"
+```
+
+To exclude AI posts/~~slopwork~~ artwork:
+```
+python3 r34sch.py --exclude-ai "<someone>" <other arguments...>
+```
+
+But if you want to get the Information of a post/posts:
+```
+python3 r34sch.py -i "<someone>" -n <number of posts> # NO ID
+
+python3 r34sch.py -I -i "<id>" # WITH ID
+```
+
+If your network is too shitty:
+```
+python3 r34sch.py -t "<someone>" -n <number of posts to download> -o <output folder>
+```
+
+If you want to filter only SAFE posts:
+```
+python3 r34sch.py -r safe "<someone>" -n <number of posts to download> -o <output folder>
+```
+
+... or other ratings:
+```
+python3 r34sch.py -r questionable,explicit "<someone>" -n <number of posts to download> -o <output folder>
+```
+
+For filtering only images or videos, pass `--only-image` and `--only-video`, don't pass them toghether :'D
 
 *Note: if using termux, and you didnt specify -o to be ``` -o /sdcard/...```, to view the content type `termux-setup-storage` it should be available on the default android file browser by clicking the top-left corner and scrolling down until you spot 'termux'*
 

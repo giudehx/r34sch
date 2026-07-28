@@ -38,7 +38,9 @@ def run_spinner(msg:str):
     if sp_flag.is_set(): sp_flag.clear()
     x=threading.Thread(target=Spinner,args=(msg,sp_flag,))
     x.start()
-def stop_spinner(): sp_flag.set()
+def stop_spinner():
+    sp_flag.set()
+    time.sleep(0.125)
 
 def progress(value, symbol="@"):
     ts = os.get_terminal_size()
@@ -56,3 +58,9 @@ def progress(value, symbol="@"):
 def printBottom(msg:str):
     sys.stdout.write(f"\033[s\033[999H\033[J{msg}\033[u")
     sys.stdout.flush()
+
+def fill_print(msg:str="",symbol=' ')->str:
+    ts = os.get_terminal_size()
+    cl = int(str(ts).split('=')[1].split(',')[0])
+    ch = int(cl-(len(msg)+1))
+    return f"{msg} {symbol*ch}"

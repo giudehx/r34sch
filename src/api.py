@@ -14,11 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from src import ui
 from src.config import extractcfg
-from src.constants import API_URL, R34SCH_FOLDER, EXCLUDE_AI
-from src.ui import RED,END, BLUE, YELLOW
-import requests, json, os
+from src.ui import RED,END, BLUE, YELLOW, GREEN
+import requests, json, os, random
+from src import utils, constants
 from datetime import datetime
+from src.utils import vb_print
+
 def getApiUid():
     api  = extractcfg()['api_key']
     user = extractcfg()['user_id']
@@ -26,7 +29,7 @@ def getApiUid():
 
 import xml.etree.ElementTree as ET
 def searchTag(tag):
-    url = f"{API_URL}/index.php?page=dapi&s=tag&q=index&name={tag}"
+    url = f"{constants.API_URL}/index.php?page=dapi&s=tag&q=index&name={tag}"
     api, user = getApiUid()
     resp = requests.get(url, params={"api_key": api, "user_id": user})
     resp.raise_for_status()
@@ -38,58 +41,80 @@ def searchTag(tag):
     t_id    = tag.get('id')
     return {"type": t_type, "count": t_count, "id": t_id}
 
-def getPostsFromApi(limit,tags,pid=None):
+def searchapi(tag):
+    url  = f"{constants.API_URL}/autocomplete.php?q={tag}"
+    api,user=getApiUid()
+    resp = requests.get(url, params={"api_key":api,"user_id":user})
+    resp.raise_for_status()
+    res = resp.json()
+    if not res: print(F"r34sch: {RED}error:{END} nothing found for {tag}")
+    print(f"\n{BLUE}search results for:{END} {YELLOW}{tag}{END}")
+    for r in res: print(f"--> {GREEN}{r["label"]}{END}")
+
+#       ^  :3
+#  \____ \/W/\
+#     /\\/./  \__
+#   _/  \\/  |****|
+
+def getFromId(id):
+    url=f"{constants.API_URL}/index.php?page=dapi&s=post&q=index&id={id}&json=1"
+    api,user=getApiUid()
+    resp = requests.get(url, params={"api_key":api,"user_id":user})
+    resp.raise_for_status()
+    res = resp.json()
+    if not res: print(f"r34sch: {RED}error:{END} nothing found for '{id}'")
+    if constants.EXCLUDE_AI:
+        for t in res[0]["tags"].split(' '):
+            if t.startswith("ai_"):
+                print(f"r34sch: {BLUE}ai:{END} detected: {t} in post. not downloading.")
+                exit(1)
+    return res
+
+from src.utils import filter_ai, api_only_image, api_only_video
+
+def getPostsFromApi(limit,tags,rating,pid=None):
+    if limit > 1000:
+        print(f"r34sch: {RED}error:{END} cannot get more than 1000 posts via api")
+        exit(1)
     # separate tags with a space
-    post_url = API_URL+"/index.php?page=dapi&s=post&q=index"
+    post_url = constants.API_URL+"/index.php?page=dapi&s=post&q=index"
     api,user_id = getApiUid()
-    r_val = ['preview_url','file_url',
-            'hash','id','image','source',
-            'change','owner','tags']
-    ret_arr = []
-    try: count = searchTag(tags)["count"]
+    try:
+        count = searchTag(tags)["count"]
+        vb_print(f"Requesting {count} images for '{tags}'.")
     except:
         print(f"r34sch: {RED}error:{END} no posts found for: {tags}")
         exit(1)
-    if int(limit) > int(count): limit = int(count)
+    if int(count) > 1000: count = 1000
     try:
-        if pid is not None:
-            params={
-                "limit":   limit,
-                "pid":     pid,
-                "tags":    tags,
-                "json":    1,
-                "api_key": api,
-                "user_id": user_id
-            }
-        else:
-            params={
-                "limit":   limit,
-                "tags":    tags,
-                "json":    1,
-                "api_key": api,
-                "user_id": user_id
-            }
+        params = {"limit":count,"pid":pid,"tags":tags,"json":1,"api_key":api,"user_id":user_id} \
+                 if pid is not None else {"limit":count,"tags":tags,"json":1,"api_key": api,"user_id":user_id}
         resp = requests.get(post_url, params=params)
+        vb_print(f"Sent {resp.url} with status code of {resp.status_code}")
         resp.raise_for_status()
         posts = resp.json()
-        if EXCLUDE_AI:
-            ai_gen = []
-            for post in posts:
-                for tag in post["tags"].split(' '):
-                    if str(tag).startswith("ai_"):
-                        ai_gen.append(post)
-                        continue
-            posts = [p for p in posts if p not in ai_gen]
-        for post in posts:
-            all_p = {}
-            for k in post:
-                if k in r_val: all_p[k] = post[k]
-            ret_arr.append(all_p)
-        # print(f"debug url: {resp.url}")
-        print(f"{BLUE}[i]{END} retrieved a total of {YELLOW}{len(ret_arr)}{END} posts")
-        return ret_arr
+        vb_print(f"Applying modifiers:\n\tRandom: {bool(constants.RANDOM)}\n\tOnly Images: {bool(constants.ONLY_IMAGE)}\n\tOnly Videos: {bool(constants.ONLY_VIDEO)}\n\tExclude AI: {bool(constants.EXCLUDE_AI)}\n\tRating: {constants.RATING} ({rating})")
+        # -- filters --
+        if constants.RANDOM:     random.shuffle(posts)
+        if constants.ONLY_IMAGE: posts = api_only_image(posts)
+        if constants.ONLY_VIDEO: posts = api_only_video(posts)
+        if constants.EXCLUDE_AI: posts = filter_ai(posts)
+        posts = utils.filter_rating(posts, rating=rating)
+        # important
+        posts = posts[:limit]
+        print(f"{BLUE}[i]{END} retrieved {YELLOW}{len(posts)}{END} posts")
+        return posts
     except Exception as e:
-        print(f"r34sch: {RED}error:{END} failed to get a response [{resp.status_code}], api_key or user_id may be invalid or expired, try reloading the r34sch_config.cfg file with a new api_key")
+        print(f"r34sch: {RED}error:{END} failed to get a response, api_key or user_id may be invalid or expired, try reloading the r34sch.cfg file with a new api_key")
         print(f"detail: {e}")
         exit(1)
 
+def getInfo(posts):
+    for post in posts:
+        print("\n---\n")
+        for p in post:
+            if p == "change":
+                print(f"Last modified:\t{datetime.fromtimestamp(int(post[p]))} ({datetime.utcfromtimestamp(int(post[p]))} UTC)")
+                continue
+            pform = p.replace("_", " ")
+            print(f"{pform.capitalize()}:\t{post[p]}")

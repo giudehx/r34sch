@@ -16,17 +16,17 @@
 
 import requests, random, os, time, sys
 from bs4 import BeautifulSoup
-from curl_cffi import requests as c_requests
+from curl_cffi import const, requests as c_requests
 from dotenv import load_dotenv
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
 import threading
-from src import ui, config
+from src import ui, config, constants
 from src.ui import RED,GREEN,BLUE,YELLOW,END,RED_BG
 load_dotenv()
 from src.download import download,getsafe,downloadApi
 
-from src.constants import URL
+from src.constants import API_THUMB_DOWNLOAD, URL
 # OG Image scrapper by ClaustAI/Kiyopon
 
 def parseUrl(hd_image,images,soup,pid,prompt):
@@ -98,7 +98,7 @@ def main(prompt:str,
                 try:
                     hd = {
                         'Referer': img_url,
-                        'Origin': img_url.split("/")[0]+"//"+img_url.split("/")[2],
+                        'Origin': img_url.split("/")[0]+"//"+img_url.split("/")[d2],
                         "Cookie": config.extractcfg()["cookie"]
                     }
                     video_r = getsafe(img_url, impersonate="chrome", headers=hd)
@@ -125,48 +125,93 @@ def quiet():
     devnull=open(os.devnull,'w')
     os.dup2(devnull.fileno(),sys.stdout.fileno())
     os.dup2(devnull.fileno(),sys.stderr.fileno())
+
 import argparse
 from src.constants import CONFIG_PATH
 parser = argparse.ArgumentParser(prog="r34sch")
-parser.add_argument("prompt", help="The prompt (or tag) for searching Rule 34 content (eg. character_(show) or just character)", type=str, nargs="?", default=None)
-parser.add_argument("-i", "--images", help="The amount of images to download. Note that sometimes when you request a high number (more that the registered posts )", type=int, default=10)
+parser.add_argument("prompt", help="The prompt (or tag, or id if -I is passed) for searching Rule 34 content", type=str, nargs="?", default=None)
+parser.add_argument("-n", "--number", help="The number of images to download.", type=int, default=10)
+parser.add_argument("-i", "--info", help="Get the information of a post (if -I is passed) or posts instead of downloading", action="store_true")
+parser.add_argument("-v", "--verbose", help="Enable verbosity, basically more output when executing", action="store_true")
 parser.add_argument("-p", "--page", help="Tell the program what page to search", type=int, default=None)
 parser.add_argument("-t", "--thumbnail", help="Only download the thumbnail instead of the post image, helps speed the program", action="store_true")
-parser.add_argument("-o", "--output", help="Where the files will be downloaded", type=str)
+parser.add_argument("-o", "--output", help="Where the images will be downloaded, default is 'r34_out'", type=str)
 parser.add_argument("-q", "--quiet", help="Disables output when running R34Sch.", action="store_true")
-parser.add_argument("--load-config", help="Load the configuration file: r34sch.cfg", action="store_true")
-parser.add_argument("--skip-metadata", help="Disable writing metadata when downloading files.", action="store_true")
+parser.add_argument("-I", "--id", help="Download from an ID.", action="store_true")
+parser.add_argument("-r", "--rating", help="Filter posts by rating, options are: safe, questionable and explicit, can also be combined but have to be seperated by commas. (safe,questionable; explicit,safe ...)", type=str, default="all")
+parser.add_argument("-s", "--search", help="Search for posts instead of downloading.", action="store_true")
+parser.add_argument("--load-config", help="Load the configuration file: r34sch.cfg, basically required, for more information read the README.md file", action="store_true")
 parser.add_argument("--exclude-ai", help="Filter AI posts. Rejects a post from downloading if in one of its tags containes \'ai_\'.", action="store_true")
+parser.add_argument("-R", "--random", help="Randomize posts.", action="store_true")
+parser.add_argument("--only-image", help="Retrieve only images", action="store_true")
+parser.add_argument("--only-video", help="Retrieve only videos", action="store_true")
+parser.add_argument("-c","--clear-cache", help="Clear the cache folder.", action="store_true")
+parser.add_argument("-l","--list-cache", help="View the currently cached/archived downloads.", action="store_true")
+parser.add_argument("-d","--delete",help="Delete a specific cache/archive, please do -l or --list-cache first", type=str)
 args=parser.parse_args()
-from src import constants
 
-print(f"\x1b[42mR34Sch {constants.VERSION}{END}")
+print(f"{GREEN}R34Sch {constants.VERSION}{END}")
 
-if args.quiet: quiet()
+# do some cleaning
+import shutil
+from src import api, utils
 
-if args.thumbnail:     constants.API_THUMB_DOWNLOAD = True
-else:                  constants.API_THUMB_DOWNLOAD = False
-if args.skip_metadata: constants.SKIP_METADATA = True
-else:                  constants.SKIP_METADATA = False
-if args.exclude_ai:    constants.EXCLUDE_AI = True
-else:                  constants.EXCLUDE_AI = False
+shutil.rmtree(constants.TEMP_FOLDER)
+os.makedirs(constants.TEMP_FOLDER)
+
+if args.quiet:         quiet()
+if args.clear_cache:   utils.clear_cache()
+if args.list_cache:    utils.list_archives()
+constants.API_THUMB_DOWNLOAD = bool(args.thumbnail)
+constants.EXCLUDE_AI         = bool(args.exclude_ai)
+constants.RANDOM             = bool(args.random)
+constants.ONLY_IMAGE         = bool(args.only_image)
+constants.ONLY_VIDEO         = bool(args.only_video)
+constants.VERBOSE            = bool(args.verbose)
+constants.RATING             = args.rating
+
+if args.delete:
+    utils.delete_archive(args.delete)
+    exit(0)
+# it's and not &&!!
+if args.only_image and args.only_video:
+    print(f"r34sch: {RED}error:{END} you cannot pass both --only-image and --only-video")
+    exit(1)
+
+if args.search:
+    api.searchapi(args.prompt)
+    exit(0)
 
 if args.load_config:
     from src.config import loadcfg
     loadcfg()
     exit(0)
 
-if os.path.exists(CONFIG_PATH):
-    from src import api
-    ui.run_spinner("--> obtaining posts...")
-    posts = api.getPostsFromApi(args.images, args.prompt, args.page)
+if args.info:
+    posts = api.getFromId(args.prompt) if args.id else api.getPostsFromApi(limit=args.number, tags=args.prompt, rating=args.rating, pid=args.page)
+    api.getInfo(posts)
+    exit(0)
+
+if args.id:
+    ui.run_spinner("--> obtaining post...")
+    posts = api.getFromId(args.prompt)
     ui.stop_spinner()
     time.sleep(0.125)
-    downloadApi(posts, args.output if args.output else "r34_out")
+    downloadApi(posts, args.prompt, args.output if args.output else "r34_out", gen_archive=False)
+    exit(0)
+
+if os.path.exists(CONFIG_PATH):
+    ui.run_spinner("--> obtaining posts...")
+    posts = api.getPostsFromApi(args.number, args.prompt, args.rating, args.page)
+    ui.stop_spinner()
+    time.sleep(0.125)
+    c_posts = utils.read_cached_archive(args.prompt, args.output if args.output else "r34_out", posts)
+    downloadApi(c_posts, args.prompt, args.output if args.output else "r34_out")
     exit(0)
 else:
     # default to old scraping tools
+    print(f"[!] {YELLOW}you are running the old parser tool because you don't have the r34sch.cfg file loaded, such options like --exclude-ai, --random and etc are not supported in this mode.{END} this mode is going to be removed soon")
     main(prompt=args.prompt,
         pid=1 if args.page == None else args.page,
         hd_image=False if args.thumbnail else True,
-        images=args.images, output=args.output)
+        images=args.number, output=args.output)
