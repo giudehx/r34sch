@@ -2,6 +2,8 @@
 
 `r34sch` is a cli utility for downloading rule 34 content (rule34.xxx) to your device.
 
+*If you encounter a bug (or suggestion) go here: https://github.com/giudehx/r34sch/issues/new*
+
 ## Installation
 
 ### PC (Windows, Linux...)
