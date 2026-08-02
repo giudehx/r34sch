@@ -1,5 +1,12 @@
 # R34Sch Changelog
 
+## 1.21
+- Now available with pip.
+- Bugfixes
+- Added extension filtering (mp4, jpeg, jpg, png, gif) (-e)
+- Added tag searching (-T)
+- Added option to disable writing to cache (--no-write)
+
 ## 1.2
 - Removed metadata writing (metadata.py)
 - Added filtering options:

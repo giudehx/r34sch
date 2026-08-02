@@ -14,9 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os,sys
+import os
 
-VERSION       = "1.2"
+VERSION       = "1.21"
 
 # urls
 URL           = "https://rule34.xxx"
@@ -39,3 +39,4 @@ RANDOM             = False
 ONLY_IMAGE         = False
 ONLY_VIDEO         = False
 RATING             = "all"
+EXTENSION          = "all"

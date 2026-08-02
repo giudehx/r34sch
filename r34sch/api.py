@@ -14,13 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from src import ui
-from src.config import extractcfg
-from src.ui import RED,END, BLUE, YELLOW, GREEN
+from r34sch import ui
+from r34sch.config import extractcfg
+from r34sch.ui import RED,END, BLUE, YELLOW, GREEN
 import requests, json, os, random
-from src import utils, constants
+from r34sch import utils, constants
 from datetime import datetime
-from src.utils import vb_print
+from r34sch.utils import vb_print
 
 def getApiUid():
     api  = extractcfg()['api_key']
@@ -70,7 +70,7 @@ def getFromId(id):
                 exit(1)
     return res
 
-from src.utils import filter_ai, api_only_image, api_only_video
+from r34sch.utils import filter_ai, api_only_image, api_only_video
 
 def getPostsFromApi(limit,tags,rating,pid=None):
     if limit > 1000:
@@ -79,29 +79,35 @@ def getPostsFromApi(limit,tags,rating,pid=None):
     # separate tags with a space
     post_url = constants.API_URL+"/index.php?page=dapi&s=post&q=index"
     api,user_id = getApiUid()
-    try:
-        count = searchTag(tags)["count"]
-        vb_print(f"Requesting {count} images for '{tags}'.")
-    except:
-        print(f"r34sch: {RED}error:{END} no posts found for: {tags}")
-        exit(1)
-    if int(count) > 1000: count = 1000
+    #try:
+    #    count = searchTag(tags)["count"]
+    #    vb_print(f"Requesting {count} images for '{tags}'.")
+    #except:
+    #    print(f"r34sch: {RED}error:{END} no posts found for: {tags}")
+    #    exit(1)
+    #if int(count) > 1000: count = 1000
+    count = 1000
     try:
         params = {"limit":count,"pid":pid,"tags":tags,"json":1,"api_key":api,"user_id":user_id} \
                  if pid is not None else {"limit":count,"tags":tags,"json":1,"api_key": api,"user_id":user_id}
         resp = requests.get(post_url, params=params)
         vb_print(f"Sent {resp.url} with status code of {resp.status_code}")
         resp.raise_for_status()
-        posts = resp.json()
-        vb_print(f"Applying modifiers:\n\tRandom: {bool(constants.RANDOM)}\n\tOnly Images: {bool(constants.ONLY_IMAGE)}\n\tOnly Videos: {bool(constants.ONLY_VIDEO)}\n\tExclude AI: {bool(constants.EXCLUDE_AI)}\n\tRating: {constants.RATING} ({rating})")
+        try: posts = resp.json()
+        except:
+            print(f"r34sch: {RED}error:{END} nothing found for '{tags}'.")
+            exit(1)
+        vb_print(f"Applying modifiers:\n\tRandom: {bool(constants.RANDOM)}\n\tOnly Images: {bool(constants.ONLY_IMAGE)}\n\tOnly Videos: {bool(constants.ONLY_VIDEO)}\n\tExclude AI: {bool(constants.EXCLUDE_AI)}\n\tRating: {constants.RATING} ({rating})\n\tExtension(s): {constants.EXTENSION}")
         # -- filters --
         if constants.RANDOM:     random.shuffle(posts)
         if constants.ONLY_IMAGE: posts = api_only_image(posts)
         if constants.ONLY_VIDEO: posts = api_only_video(posts)
         if constants.EXCLUDE_AI: posts = filter_ai(posts)
-        posts = utils.filter_rating(posts, rating=rating)
+        posts = utils.filter_rating(posts, rating=rating) # uhhhhh
+        posts = utils.filter_extension(posts, constants.EXTENSION)
         # important
         posts = posts[:limit]
+        vb_print("__________\n[ * done ]\n^^^^^^^^^^")
         print(f"{BLUE}[i]{END} retrieved {YELLOW}{len(posts)}{END} posts")
         return posts
     except Exception as e:

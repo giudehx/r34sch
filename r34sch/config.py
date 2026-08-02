@@ -15,9 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os, shutil, sys
-from src.constants import CONFIG_FILE, R34SCH_FOLDER, CONFIG_PATH, CACHE_FOLDER, TEMP_FOLDER
-from src.ui import RED,END
-from src.utils import secure
+from r34sch.constants import CONFIG_FILE, R34SCH_FOLDER, CONFIG_PATH, CACHE_FOLDER, TEMP_FOLDER
+from r34sch.ui import RED,END
+from r34sch.utils import secure
 
 def loadcfg():
     if CONFIG_FILE in os.listdir(os.getcwd()):

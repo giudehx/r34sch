@@ -20,3 +20,4 @@ R34Sch (Rule 34 cli Searcher)
 
 Go to github.com/giudehx/r34sch for more info
 """
+

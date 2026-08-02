@@ -20,8 +20,8 @@ def percent(min_n, max_n) -> float: return (min_n/max_n)*100
 
 import shutil, hashlib, subprocess
 import base64, os, tarfile, sys, json
-from src import constants
-from src.ui import YELLOW, fill_print, RED, END, progress, BLUE, GREEN
+from r34sch import constants
+from r34sch.ui import YELLOW, fill_print, RED, END, progress, BLUE, GREEN
 
 def vb_print(msg:str, *args, **kwargs):
     if constants.VERBOSE: print(msg, *args, **kwargs)
@@ -52,8 +52,24 @@ def filter_rating(posts, rating:str):
                 exit(1)
     return o_posts
 
-def api_only_image(posts):   return [p for p in posts if p["image"].endswith((".png", ".jpeg", ".jpg"))]
-def api_only_video(posts):   return [p for p in posts if p["image"].endswith((".mp4", ".gif"))]
+def filter_extension(posts, ext:str):
+    o_posts = []
+    if ext == "all": return posts
+    ext = ext.split(',')
+    for post in posts:
+        for i in ext:
+            if i in ["png","gif","mp4","jpeg","jpg"]:
+                # abc123def456.ext
+                if post["image"].split('.')[1] == i:
+                    o_posts.append(post)
+                    vb_print(f"FltExtension: length of o_posts is: {len(o_posts)}")
+            else:
+                print(f"r34sch: {RED}error:{END} {i} is not a valid type, you can choose between: png, gif, mp4 & jpeg/jpg")
+                exit(1)
+    return o_posts
+
+def api_only_image(posts):   return [p for p in posts if p["image"].endswith((".png", ".jpeg", ".jpg", ".gif"))]
+def api_only_video(posts):   return [p for p in posts if p["image"].endswith((".mp4"))]
 
 def secure(fpath):
     vb_print(f"secure(): securing {os.path.abspath(fpath)}...")
@@ -120,6 +136,8 @@ def read_cached_archive(tag, out, meta):
             if constants.ONLY_IMAGE: mdata_json = api_only_image(mdata_json) # TO TEST
             if constants.ONLY_VIDEO: mdata_json = api_only_video(mdata_json)
             mdata_json = filter_rating(mdata_json, constants.RATING)
+            mdata_json = filter_extension(mdata_json, constants.EXTENSION)
+
             imgs = [m["image"] for m in mdata_json]
             print(f"{BLUE}-->{END} Copying {len(imgs)} images to {out}...")
             for img in imgs:

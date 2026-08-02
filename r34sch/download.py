@@ -15,13 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os,uuid,shutil
-from src.ui import RED,GREEN,END,BLUE,YELLOW
+from r34sch.ui import RED,GREEN,END,BLUE,YELLOW
 from curl_cffi import requests as c_requests
 import random,time,threading
-from src import utils
-from src import ui
-from src import constants
-from src.utils import vb_print
+from r34sch import utils
+from r34sch import ui
+from r34sch import constants
+from r34sch.utils import vb_print
 def getsafe(url, *args,**kwargs):
     IMPERSONATE_OPTIONS = ["chrome", "edge", "safari", "chrome110", "chrome120"]
     retries, delay = 9, 2
@@ -74,7 +74,9 @@ def downloadApi(ret_arr, tag, out="r34_out", gen_archive=True):
             'Origin': urlf.split("/")[0]+"//"+urlf.split("/")[2]
         }
         print(f"[{ret_arr.index(link)+1}/{len(ret_arr)}] {BLUE}downloading:{END} {YELLOW}{urlf}{END}",flush=True)
-        fname=os.path.abspath(os.path.join(constants.TEMP_FOLDER,link["image"]))
+        # --
+        pre_fname = link["image"]
+        fname=os.path.abspath(os.path.join(constants.TEMP_FOLDER,pre_fname))
         r = getsafe(urlf, stream=True, headers=headers, impersonate="chrome")
         vb_print(f"[dw] Server returned {r.status_code}")
         url_fs = int(r.headers.get("Content-Length"))
@@ -89,15 +91,14 @@ def downloadApi(ret_arr, tag, out="r34_out", gen_archive=True):
         if not os.path.exists(fname): raise Exception(f"( OnO )=p File {fname} does not exist!")
         print(f"{GREEN}[ok]{END} ({os.path.getsize(fname)} bytes)",flush=True)
         # start new thread here
-        dest_p = os.path.abspath(os.path.join(out, link["image"]))
+        dest_p = os.path.abspath(os.path.join(out, pre_fname))
         shutil.copy2(fname, dest_p)
         dw_files.append(dest_p)
         og_hash.append(link["hash"])
         vb_print(f"[dw] Downloaded {len(dw_files)} files.")
         os.remove(fname)
     # generate cache
-    if ret_arr:
-        if gen_archive:
-            print("[*] generating archive...")
-            utils.create_cached_archive(dw_files, tag, meta=ret_arr)
-            print(f"{GREEN}[ok]{END}")
+    if ret_arr and gen_archive:
+        print("[*] generating archive...")
+        utils.create_cached_archive(dw_files, tag, meta=ret_arr)
+        print(f"{GREEN}[ok]{END}")
