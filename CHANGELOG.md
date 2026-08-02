@@ -1,5 +1,9 @@
 # R34Sch Changelog
 
+## 1.21.1
+- Exists because of PyPI being screwy ...
+- Nothing to add here.
+
 ## 1.21
 - Now available with pip.
 - Bugfixes
