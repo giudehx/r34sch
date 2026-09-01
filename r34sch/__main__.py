@@ -132,7 +132,7 @@ import argparse
 from r34sch.constants import CONFIG_PATH
 
 def main():
-        #try:
+    try:
         parser = argparse.ArgumentParser(prog="r34sch")
         parser.add_argument("prompt", help="The prompt (or tag, or id if -I is passed) for searching Rule 34 content", type=str, nargs="?", default=None)
         parser.add_argument("-n", "--number", help="The number of images to download.", type=int, default=10)
@@ -283,7 +283,7 @@ def main():
                 pid=1 if args.page == None else args.page,
                 hd_image=False if args.thumbnail else True,
                 images=args.number, output=args.output)
-        #except Exception as e:
-        #    print(f"r34sch: {RED}error:{END} {e}")
-        #    exit(1)
+    except Exception as e:
+        print(f"r34sch: {RED}error:{END} {e}")
+        exit(1)
 if __name__ == "__main__": main()
