@@ -15,13 +15,21 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os,uuid,shutil
-from r34sch.ui import RED,GREEN,END,BLUE,YELLOW
 from curl_cffi import requests as c_requests
 import random,time,threading
 from r34sch import utils
 from r34sch import ui
 from r34sch import constants
 from r34sch.utils import vb_print
+
+from r34sch.ui import c_ui
+RED    = c_ui.RED
+YELLOW = c_ui.YELLOW
+GREEN  = c_ui.GREEN
+BLUE   = c_ui.BLUE
+END    = c_ui.END
+RED_BG = c_ui.RED_BG
+
 def getsafe(url, *args,**kwargs):
     IMPERSONATE_OPTIONS = ["chrome", "edge", "safari", "chrome110", "chrome120"]
     retries, delay = 9, 2
@@ -66,6 +74,7 @@ def downloadApi(ret_arr, tag, out="r34_out", gen_archive=True):
     if not os.path.exists(out): os.makedirs(out)
     if not os.path.exists(constants.TEMP_FOLDER): os.makedirs(constants.TEMP_FOLDER)
     dw_files, og_hash = [], []
+    post_ids = {}
     for link in ret_arr:
         if constants.API_THUMB_DOWNLOAD: urlf = link["preview_url"]
         else: urlf = link["file_url"]
@@ -95,10 +104,12 @@ def downloadApi(ret_arr, tag, out="r34_out", gen_archive=True):
         shutil.copy2(fname, dest_p)
         dw_files.append(dest_p)
         og_hash.append(link["hash"])
+        post_ids[dest_p] = link["id"]
         vb_print(f"[dw] Downloaded {len(dw_files)} files.")
         os.remove(fname)
     # generate cache
+    vb_print(f"Report type is {constants.REPORT_TYPE}")
     if ret_arr and gen_archive:
         print("[*] generating archive...")
         utils.create_cached_archive(dw_files, tag, meta=ret_arr)
-        print(f"{GREEN}[ok]{END}")
+    

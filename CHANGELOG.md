@@ -1,5 +1,16 @@
 # R34Sch Changelog
 
+## 1.3
+- Fixed archiving.
+- Fixed tag search (-T) (added ambiguous)
+- File hashing in cache folder
+- Now writes a report everytime when downloading finish
+- No color option (--no-color)
+- Fixed --load-config bug
+- Added ability to view comments (-c <post id>)
+- Change --clear-cache (-c) to -C
+- --report-type (-P), accepts: csv, txt or none
+
 ## 1.21.1
 - Exists because of PyPI being screwy ...
 - Nothing to add here.

@@ -16,8 +16,12 @@
 
 import os, shutil, sys
 from r34sch.constants import CONFIG_FILE, R34SCH_FOLDER, CONFIG_PATH, CACHE_FOLDER, TEMP_FOLDER
-from r34sch.ui import RED,END
+from r34sch import ui
 from r34sch.utils import secure
+
+from r34sch.ui import c_ui
+RED = c_ui.RED
+END = c_ui.END
 
 def loadcfg():
     if CONFIG_FILE in os.listdir(os.getcwd()):

@@ -22,9 +22,10 @@ from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
 import threading
 from r34sch import ui, config, constants
-from r34sch.ui import RED,GREEN,BLUE,YELLOW,END,RED_BG
 load_dotenv()
 from r34sch.download import download,getsafe,downloadApi
+from r34sch.utils import vb_print
+
 
 from r34sch.constants import API_THUMB_DOWNLOAD, URL
 # OG Image scrapper by ClaustAI/Kiyopon
@@ -131,18 +132,20 @@ import argparse
 from r34sch.constants import CONFIG_PATH
 
 def main():
-    try:
+        #try:
         parser = argparse.ArgumentParser(prog="r34sch")
         parser.add_argument("prompt", help="The prompt (or tag, or id if -I is passed) for searching Rule 34 content", type=str, nargs="?", default=None)
         parser.add_argument("-n", "--number", help="The number of images to download.", type=int, default=10)
         parser.add_argument("-i", "--info", help="Get the information of a post (if -I is passed) or posts instead of downloading", action="store_true")
         parser.add_argument("-v", "--verbose", help="Enable verbosity, basically more output when executing", action="store_true")
         parser.add_argument("-p", "--page", help="Tell the program what page to search", type=int, default=None)
+        parser.add_argument("-c", "--comments", help="View a post's comments from an ID", action="store_true")
         parser.add_argument("-t", "--thumbnail", help="Only download the thumbnail instead of the post image, helps speed the program", action="store_true")
         parser.add_argument("-o", "--output", help="Where the images will be downloaded, default is 'r34_out'", type=str)
         parser.add_argument("-T", "--tag-search", help="Search the type, count (n. posts) and id of a tag", action="store_true")
         parser.add_argument("-q", "--quiet", help="Disables output when running R34Sch.", action="store_true")
         parser.add_argument("-I", "--id", help="Download from an ID.", action="store_true")
+        parser.add_argument("-P", "--report-type", help="Change report file type, default is csv, options are: csv; txt; none.", type=str, default="csv")
         parser.add_argument("-r", "--rating", help="Filter posts by rating, options are: safe, questionable and explicit, can also be combined but have to be seperated by commas. (safe,questionable; explicit,safe ...)", type=str, default="all")
         parser.add_argument("-e", "--extension", help="Filter posts by extension, options are: png, jpg, jpeg, gif & mp4, can also be combined but have to be seperated by commas. (mp4,gif; png,jpeg,jpg; gif,png ...)", type=str, default="all")
         parser.add_argument("-s", "--search", help="Search for posts instead of downloading.", action="store_true")
@@ -152,18 +155,27 @@ def main():
         parser.add_argument("-R", "--random", help="Randomize posts.", action="store_true")
         parser.add_argument("--only-image", help="Retrieve only images", action="store_true")
         parser.add_argument("--only-video", help="Retrieve only videos", action="store_true")
-        parser.add_argument("-c","--clear-cache", help="Clear the cache folder.", action="store_true")
+        parser.add_argument("-C","--clear-cache", help="Clear the cache folder.", action="store_true")
         parser.add_argument("-l","--list-cache", help="View the currently cached/archived downloads.", action="store_true")
         parser.add_argument("-d","--delete",help="Delete a specific cache/archive, please do -l or --list-cache first", type=str)
+        parser.add_argument("--no-color", help="Disable colored output when execution.", action="store_true")
         args=parser.parse_args()
-
-        print(f"{GREEN}R34Sch {constants.VERSION}{END}")
+        
         # do some cleaning
         import shutil
         from r34sch import api, utils
 
         shutil.rmtree(constants.TEMP_FOLDER)
         os.makedirs(constants.TEMP_FOLDER)
+        
+        if args.no_color:
+            import sys, re
+            class ColorStripper:
+                ANSI_REGEX = re.compile(r'\x1b\[[0-9;]*[mGKB]')
+                def __init__(self, stream): self.stream = stream
+                def write(self, text): self.stream.write(self.ANSI_REGEX.sub('', text))
+                def flush(self): self.stream.flush()
+            sys.stdout = ColorStripper(sys.stdout)
 
         if args.quiet:         quiet()
         if args.clear_cache:   utils.clear_cache()
@@ -175,19 +187,36 @@ def main():
         constants.ONLY_IMAGE         = bool(args.only_image)
         constants.ONLY_VIDEO         = bool(args.only_video)
         constants.VERBOSE            = bool(args.verbose)
+        constants.NO_COLOR           = bool(args.no_color)
         constants.RATING             = args.rating
         constants.EXTENSION          = args.extension
+        constants.REPORT_TYPE        = args.report_type
+
+        from r34sch.ui import c_ui
+        RED    = c_ui.RED
+        YELLOW = c_ui.YELLOW
+        GREEN  = c_ui.GREEN
+        BLUE   = c_ui.BLUE
+        END    = c_ui.END
+        RED_BG = c_ui.RED_BG
+        
+        print(f"{GREEN}R34Sch {constants.VERSION}{END}")
+
+        if args.comments:
+            alas = api.getComments(args.prompt)
+            api.parseComments(alas)
+            exit(0)
 
         if args.tag_search:
             lol1 = api.searchTag(args.prompt)
-            print(f"--> {BLUE}search results for:{END} {YELLOW}{args.prompt}:{END}")
-            type_name = "Ambiguous"
+            print(f"--> {BLUE}search results for:{END} {YELLOW}{args.prompt}{END}:")
+            type_name = ""
             if   int(lol1["type"]) == 0: type_name = "Generic"
             elif int(lol1["type"]) == 1: type_name = "Artist"
             elif int(lol1["type"]) == 2: type_name = "Character"
             elif int(lol1["type"]) == 3: type_name = "Copyright"
-            elif int(lol1["type"]) == 4: type_name = "Metadata generic"
-            print(f"Type:\t{lol1["type"]} ({type_name})\nCount:\t{lol1["count"]}\nID:\t{lol1["id"]}")
+            elif int(lol1["type"]) == 4: type_name = "Generic"
+            print(f"Type:\t{lol1["type"]} ({type_name}) (Ambiguous: {lol1["ambiguous"]})\nCount:\t{lol1["count"]}\nID:\t{lol1["id"]}")
             exit(0)
 
         if args.delete:
@@ -203,7 +232,7 @@ def main():
             exit(0)
 
         if args.load_config:
-            from src.config import loadcfg
+            from r34sch.config import loadcfg
             loadcfg()
             exit(0)
 
@@ -213,20 +242,39 @@ def main():
             exit(0)
 
         if args.id:
+            print(f"{BLUE}-->{END} Verifying hashes...")
+            utils.verify_hashes(os.path.join(constants.CACHE_FOLDER, "hashes"), constants.CACHE_FOLDER)
             ui.run_spinner("--> obtaining post...")
             posts = api.getFromId(args.prompt)
             ui.stop_spinner()
             time.sleep(0.125)
-            downloadApi(posts, args.prompt, args.output if args.output else "r34_out", gen_archive=False)
+            downloadApi(posts, args.prompt, args.output if args.output else "r34sch_output", gen_archive=False)
+            if constants.REPORT_TYPE != "none":
+                ui.run_spinner("-> generating report file ...")
+                post_ids = utils.gen_post_ids(posts, args.output if args.output else "r34sch_output")
+                vb_print(f"Post Ids: {post_ids}; rp Type: {constants.REPORT_TYPE}")
+                rp_out = utils.write_report(args.output if args.output else "r34sch_output", post_ids, rp_type=constants.REPORT_TYPE)
+                ui.stop_spinner()
+                print(f"{GREEN}Download successful!\n-> Report file:\t{rp_out}\n-> Directory:\t{args.output if args.output else "r34sch_output"}{END}")
             exit(0)
 
         if os.path.exists(CONFIG_PATH):
+            print(f"{BLUE}-->{END} Verifying hashes...")
+            utils.verify_hashes(os.path.join(constants.CACHE_FOLDER, "hashes"), constants.CACHE_FOLDER)
             ui.run_spinner("--> obtaining posts...")
             posts = api.getPostsFromApi(args.number, args.prompt, args.rating, args.page)
             ui.stop_spinner()
             time.sleep(0.125)
-            c_posts = utils.read_cached_archive(args.prompt, args.output if args.output else "r34_out", posts)
-            downloadApi(c_posts, args.prompt, args.output if args.output else "r34_out", gen_archive=False if args.no_write else True)
+            c_posts = utils.read_cached_archive(args.prompt, args.output if args.output else "r34sch_output", posts)
+            downloadApi(c_posts, args.prompt, args.output if args.output else "r34sch_output", gen_archive=False if args.no_write else True)
+            if constants.REPORT_TYPE != "none":
+                ui.run_spinner("-> generating report file ...")
+                post_ids = utils.gen_post_ids(posts, args.output if args.output else "r34sch_output")
+                vb_print(f"Post Ids: {post_ids}; rp Type: {constants.REPORT_TYPE}")
+                rp_out = utils.write_report(args.output if args.output else "r34sch_output", post_ids, rp_type=constants.REPORT_TYPE)
+                ui.stop_spinner()
+                print(f"{GREEN}Download successful!\n-> Report file:\t{rp_out}\n-> Directory:\t{args.output if args.output else "r34sch_output"}{END}")
+
             exit(0)
         else:
             # default to old scraping tools
@@ -235,7 +283,7 @@ def main():
                 pid=1 if args.page == None else args.page,
                 hd_image=False if args.thumbnail else True,
                 images=args.number, output=args.output)
-    except Exception as e:
-        print(f"r34sch: {RED}error:{END} {e}")
-        exit(1)
+        #except Exception as e:
+        #    print(f"r34sch: {RED}error:{END} {e}")
+        #    exit(1)
 if __name__ == "__main__": main()

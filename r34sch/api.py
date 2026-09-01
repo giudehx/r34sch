@@ -16,18 +16,27 @@
 
 from r34sch import ui
 from r34sch.config import extractcfg
-from r34sch.ui import RED,END, BLUE, YELLOW, GREEN
+from r34sch.ui import fill_print
 import requests, json, os, random
 from r34sch import utils, constants
 from datetime import datetime
 from r34sch.utils import vb_print
+import xml.etree.ElementTree as ET
+import xmltodict
+
+from r34sch.ui import c_ui
+RED    = c_ui.RED
+YELLOW = c_ui.YELLOW
+GREEN  = c_ui.GREEN
+BLUE   = c_ui.BLUE
+END    = c_ui.END
+RED_BG = c_ui.RED_BG
 
 def getApiUid():
     api  = extractcfg()['api_key']
     user = extractcfg()['user_id']
     return api, user
 
-import xml.etree.ElementTree as ET
 def searchTag(tag):
     url = f"{constants.API_URL}/index.php?page=dapi&s=tag&q=index&name={tag}"
     api, user = getApiUid()
@@ -39,7 +48,8 @@ def searchTag(tag):
     t_type  = tag.get('type')
     t_count = tag.get('count')
     t_id    = tag.get('id')
-    return {"type": t_type, "count": t_count, "id": t_id}
+    t_ambig = tag.get('ambiguous')
+    return {"type": t_type, "count": t_count, "id": t_id, "ambiguous": t_ambig}
 
 def searchapi(tag):
     url  = f"{constants.API_URL}/autocomplete.php?q={tag}"
@@ -124,3 +134,24 @@ def getInfo(posts):
                 continue
             pform = p.replace("_", " ")
             print(f"{pform.capitalize()}:\t{post[p]}")
+
+def getComments(post_id):
+    url       = f"{constants.API_URL}/index.php?page=dapi&s=comment&q=index&post_id={post_id}"
+    api, user = getApiUid()
+    resp      = requests.get(url, params={"api_key":api,"user_id":user})
+    resp.raise_for_status()
+    vb_print(f"Sent {resp.url} with status of {resp.status_code}")
+    res       = resp.text
+    xml_data  = xmltodict.parse(res)
+    try: comments = xml_data["comments"]["comment"]
+    except KeyError:
+        print(f"r34sch: {RED}error:{END} comments for {post_id} do not exist.")
+        exit(1)
+    return comments
+
+def parseComments(comments):
+    print(f"{BLUE}Showing comments for {END}{YELLOW}'{comments[0]["@post_id"]}'{END}\n")
+    for comment in comments:
+        print(f"{GREEN}{comment["@creator"]}{END}({comment["@creator_id"]}) {BLUE}{comment["@created_at"]}{END} (ID {comment["@id"]}):")
+        print(f"> {comment["@body"]}")
+        print(fill_print(symbol="-"))

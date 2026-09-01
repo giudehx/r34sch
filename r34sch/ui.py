@@ -14,17 +14,30 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from r34sch import constants
+
 # R34Sch UI
-RED = "\033[0;31m"
-GREEN = "\033[0;32m"
-BLUE = "\033[0;34m"
-YELLOW = "\033[1;33m"
-END = "\033[0m"
-RED_BG = "\x1b[41m"
+class Colors:
+    _COLORS = {
+        "RED":    "\033[0;31m",
+        "GREEN":  "\033[0;32m",
+        "BLUE":   "\033[0;34m",
+        "YELLOW": "\033[1;33m",
+        "END":    "\033[0m",
+        "RED_BG": "\x1b[41m",
+    }
+
+    def __getattr__(self, name: str) -> str:
+        if name in self._COLORS: return "" if constants.NO_COLOR else self._COLORS[name]
+        raise AttributeError(f"nO color '{name}'")
+
+c_ui = Colors()
 
 import time, threading, sys
 import os
+
 sp_flag = threading.Event()
+
 def Spinner(msg:str,stopflag):
     anim = "- \\ | /"
     while not stopflag.is_set():
@@ -33,7 +46,7 @@ def Spinner(msg:str,stopflag):
             print(f"{msg} {a}", end="\r")
             sp_flag.wait(0.125)
     print(" "*m_len,end="\r")
-    print(msg+f" {GREEN}[ok]{END}")
+    print(msg+f" {c_ui.GREEN}[ok]{c_ui.END}")
 def run_spinner(msg:str):
     if sp_flag.is_set(): sp_flag.clear()
     x=threading.Thread(target=Spinner,args=(msg,sp_flag,))

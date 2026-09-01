@@ -16,7 +16,7 @@
 
 import os
 
-VERSION       = "1.21"
+VERSION       = "1.3"
 
 # urls
 URL           = "https://rule34.xxx"
@@ -38,5 +38,7 @@ EXCLUDE_AI         = False
 RANDOM             = False
 ONLY_IMAGE         = False
 ONLY_VIDEO         = False
+NO_COLOR           = False
 RATING             = "all"
 EXTENSION          = "all"
+REPORT_TYPE        = "csv"

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "r34sch"
-version = "1.21.1"
+version = "1.3"
 description = "The unofficial command line version of the infamous Rule 34."
 readme = "README.md"
 requires-python = ">=3.8"
@@ -35,7 +35,8 @@ dependencies = [
     "cffi",
     "certifi",
     "bs4",
-    "beautifulsoup4"
+    "beautifulsoup4",
+    "xmltodict"
 ]
 
 [project.urls]
