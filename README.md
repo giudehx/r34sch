@@ -9,7 +9,7 @@
 R34Sch is now available through the `pip` package manager, simply type:
 
 ```
-pip install r34sch
+pip install r34sch==1.3
 ```
 
 ### Building from source
@@ -75,6 +75,13 @@ user_id=<YOUR_USER_ID>
 ```
 r34sch --load-config
 ```
+
+*If you are on Windows, type this before `r34sch --load-config`:*
+```
+mkdir C:\Users\<user>\.r34sch\temp
+```
+where `<user>` is your windows username.
+
 If it errors because it couldn't find `r34sch.cfg`, make sure that the file you just saved should be exactly named (both filename and extension): `r34sch.cfg`. Then try again, make sure to run it exactly the same directory as the config file.
 
 ## Using R34Sch
